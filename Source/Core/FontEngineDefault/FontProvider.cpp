@@ -78,8 +78,13 @@ FontFaceHandleDefault* FontProvider::GetFallbackFontFace(int index, int font_siz
 void FontProvider::ReleaseFontResources()
 {
 	RMLUI_ASSERT(g_font_provider);
+	Log::Message(Log::LT_INFO, "[diag] FontProvider::ReleaseFontResources — %zu font families",
+		g_font_provider->font_families.size());
 	for (auto& name_family : g_font_provider->font_families)
+	{
+		Log::Message(Log::LT_INFO, "[diag]   releasing family '%s'", name_family.first.c_str());
 		name_family.second->ReleaseFontResources();
+	}
 }
 
 bool FontProvider::LoadFontFace(const String& file_name, int face_index, bool fallback_face, Style::FontWeight weight)

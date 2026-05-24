@@ -423,19 +423,31 @@ void ReleaseFontResources()
 	if (!font_interface)
 		return;
 
+	Log::Message(Log::LT_INFO, "[diag] ReleaseFontResources: %zu active contexts", core_data->contexts.size());
 	for (const auto& name_context : core_data->contexts)
+	{
+		Log::Message(Log::LT_INFO, "[diag]   dirtying fonts: context '%s'", name_context.first.c_str());
 		name_context.second->GetRootElement()->DirtyFontFaceRecursive();
+	}
 
+	Log::Message(Log::LT_INFO, "[diag]   font_interface->ReleaseFontResources() — GLOBAL glyph cache nuke");
 	font_interface->ReleaseFontResources();
 
 	for (const auto& name_context : core_data->contexts)
+	{
+		Log::Message(Log::LT_INFO, "[diag]   Update() on context '%s'", name_context.first.c_str());
 		name_context.second->Update();
+	}
+	Log::Message(Log::LT_INFO, "[diag] ReleaseFontResources done");
 }
 
 void ReleaseRenderManagers()
 {
 	auto& contexts = core_data->contexts;
 	auto& render_managers = core_data->render_managers;
+
+	Log::Message(Log::LT_INFO, "[diag] ReleaseRenderManagers: %zu contexts, %zu render_managers",
+		contexts.size(), render_managers.size());
 
 	ReleaseFontResources();
 
@@ -446,10 +458,42 @@ void ReleaseRenderManagers()
 			[&](const auto& context_pair) { return &context_pair.second->GetRenderManager() == render_manager; });
 
 		if (num_contexts_using_manager == 0)
+		{
+			Log::Message(Log::LT_INFO, "[diag]   erasing orphaned render_manager (0 contexts)");
 			it = render_managers.erase(it);
+		}
 		else
+		{
+			Log::Message(Log::LT_INFO, "[diag]   keeping render_manager (%d contexts)", (int)num_contexts_using_manager);
 			++it;
+		}
 	}
+	Log::Message(Log::LT_INFO, "[diag] ReleaseRenderManagers done: %zu remain", render_managers.size());
+}
+
+RenderManager* GetRenderManager(RenderInterface* render_interface)
+{
+	if (!render_interface || !core_data)
+		return nullptr;
+
+	auto it = core_data->render_managers.find(render_interface);
+	if (it != core_data->render_managers.end())
+		return it->second.get();
+	return nullptr;
+}
+
+bool ReleaseRenderManager(RenderInterface* render_interface)
+{
+	if (!render_interface || !core_data)
+		return false;
+
+	auto it = core_data->render_managers.find(render_interface);
+	if (it == core_data->render_managers.end())
+		return false;
+
+	Log::Message(Log::LT_INFO, "[diag] ReleaseRenderManager: removing single render_manager for interface (no font nuke)");
+	core_data->render_managers.erase(it);
+	return true;
 }
 
 // Functions that need to be accessible within the Core library, but not publicly.

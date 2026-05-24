@@ -37,14 +37,18 @@ FontFaceHandleDefault* FontFace::GetHandle(int size, bool load_default_glyphs)
 	// See if this face has been released.
 	if (!face)
 	{
+		Log::Message(Log::LT_INFO, "[diag] FontFace::GetHandle(%d) — face released, cannot regenerate", size);
 		Log::Message(Log::LT_WARNING, "Font face has been released, unable to generate new handle.");
 		return nullptr;
 	}
+
+	Log::Message(Log::LT_INFO, "[diag] FontFace::GetHandle(%d) — regenerating handle (face alive)", size);
 
 	// Construct and initialise the new handle.
 	auto handle = MakeUnique<FontFaceHandleDefault>();
 	if (!handle->Initialize(face, size, load_default_glyphs))
 	{
+		Log::Message(Log::LT_INFO, "[diag] FontFace::GetHandle(%d) — Initialize FAILED", size);
 		handles[size] = nullptr;
 		return nullptr;
 	}
@@ -54,11 +58,13 @@ FontFaceHandleDefault* FontFace::GetHandle(int size, bool load_default_glyphs)
 	// Save the new handle to the font face
 	handles[size] = std::move(handle);
 
+	Log::Message(Log::LT_INFO, "[diag] FontFace::GetHandle(%d) — regenerated OK", size);
 	return result;
 }
 
 void FontFace::ReleaseFontResources()
 {
+	Log::Message(Log::LT_INFO, "[diag] FontFace::ReleaseFontResources — destroying %zu sized handles", handles.size());
 	HandleMap().swap(handles);
 }
 
