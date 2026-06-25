@@ -32,6 +32,28 @@ the style system short-circuits when `font-size` hasn't changed.
   entries. When a render manager is destroyed, those entries become dangling
   pointers. This method allows cleaning them up before the render manager dies.
 
+## Modified Behavior
+
+### `ElementUtilities::GetClippingRegion()` — always clip overflow boxes
+- **File:** `Source/Core/ElementUtilities.cpp`
+- **Change:** `has_clipping_content` no longer depends on `GetScrollWidth/Height() >
+  GetClientWidth/Height()`. An element with `overflow != visible` (`clip_enabled`)
+  now always contributes its client area to the clip region.
+- **Why:** The old scroll-vs-client heuristic only clipped when *in-flow* content
+  overflowed. It missed two cases that must still be clipped:
+  1. **Absolutely-positioned descendants** — these never grow an ancestor's
+     `scrollable_overflow_rectangle`. They are laid out in
+     `ContainerBox::ClosePositionedElements()`, which runs *after*
+     `SubmitBox()`/`SetScrollableOverflowRectangle()`. So an `overflow:hidden`
+     box whose only overflowing content is abs-positioned reported "no clipping
+     content" and emitted no scissor region — its descendants rendered unclipped,
+     compositing over unrelated siblings (rmlui-godot issue #44).
+  2. **Top/left (negative) overflow** — never counted as scrollable overflow, so a
+     pannable abs-positioned canvas with negative offsets was never clipped.
+- **Trade-off:** Every clipping box now emits a scissor region (and rounded/
+  transformed ones a clip mask) even when nothing overflows. This is what browsers
+  do; scissor is cheap. This is the only change to an *existing* upstream function.
+
 ## Merge Strategy
 
 When updating to a new RmlUI version:
@@ -39,5 +61,6 @@ When updating to a new RmlUI version:
 1. Check if upstream added equivalent API (unlikely but possible).
 2. Re-apply the 3 functions — they are purely additive (~30 lines total),
    touch only `Core.h`, `Core.cpp`, `CallbackTexture.h`, `CallbackTexture.cpp`.
-3. No existing functions are modified.
+3. Re-apply the `GetClippingRegion()` `has_clipping_content` change above if upstream
+   still gates clipping on scrollable overflow (see "Modified Behavior").
 4. Forward-declare `RenderManager` was added to `Core.h` (line after `RenderInterface`).

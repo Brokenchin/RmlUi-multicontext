@@ -144,9 +144,14 @@ bool ElementUtilities::GetClippingRegion(Element* element, Rectanglei& out_clip_
 		if (((clip_always || clip_enabled) && num_ignored_clips == 0) || force_clip_current_element)
 		{
 			const BoxArea clip_area = (force_clip_current_element ? BoxArea::Border : clipping_element->GetClipArea());
-			const bool has_clipping_content =
-				(clip_always || force_clip_current_element || clipping_element->GetClientWidth() < clipping_element->GetScrollWidth() - 0.5f ||
-					clipping_element->GetClientHeight() < clipping_element->GetScrollHeight() - 0.5f);
+			// An element that clips its overflow (overflow != visible) must always clip its contents to its client
+			// area, regardless of whether in-flow content currently overflows. The old scroll-vs-client heuristic
+			// missed two cases that still need clipping: (1) absolutely-positioned descendants, which never contribute
+			// to an ancestor's scrollable-overflow rectangle (they are laid out in ContainerBox::ClosePositionedElements
+			// after the overflow rectangle has already been submitted), and (2) content overflowing on the top/left,
+			// since negative overflow is never counted as scrollable. Both led to abs-positioned/panned content
+			// escaping an overflow:hidden box.
+			const bool has_clipping_content = (clip_always || force_clip_current_element || clip_enabled);
 			bool disable_scissor_clipping = false;
 
 			if (out_clip_mask_list)
