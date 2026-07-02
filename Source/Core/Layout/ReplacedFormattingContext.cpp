@@ -28,11 +28,7 @@ UniquePtr<LayoutBox> ReplacedFormattingContext::Format(ContainerBox* parent_cont
 	// Usually, replaced elements add children to the hidden DOM. If we happen to have any normal DOM children, e.g.
 	// added by the user, we format them using normal block formatting rules. Since replaced elements provide their
 	// own rendering, this could cause conflicting or strange layout results, and is done at the user's own risk.
-	// Multicontext fork: an element may declare itself a `layout-boundary` to opt out — its children are real DOM
-	// (they render, hit-test and update style normally) but format themselves out-of-band against this element's box
-	// (e.g. an embedded sub-document laid out in its own update pass). Skipping them here keeps a parent reflow from
-	// re-formatting every embedded subtree: O(parent shell) instead of O(parent + all embeds).
-	if (element->HasChildNodes() && !element->HasAttribute("layout-boundary"))
+	if (element->HasChildNodes())
 	{
 		RootBox root(box);
 		BlockFormattingContext::Format(&root, element, &box);

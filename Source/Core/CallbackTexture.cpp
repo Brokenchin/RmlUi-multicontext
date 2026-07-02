@@ -93,14 +93,4 @@ Texture CallbackTextureSource::GetTexture(RenderManager& render_manager) const
 	return Texture(texture);
 }
 
-void CallbackTextureSource::ReleaseForRenderManager(RenderManager* render_manager)
-{
-	auto it = textures.find(render_manager);
-	if (it != textures.end())
-	{
-		it->second.Release();
-		textures.erase(it);
-	}
-}
-
 } // namespace Rml

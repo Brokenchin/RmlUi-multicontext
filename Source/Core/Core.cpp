@@ -455,30 +455,6 @@ void ReleaseRenderManagers()
 	}
 }
 
-RenderManager* GetRenderManager(RenderInterface* render_interface)
-{
-	if (!render_interface || !core_data)
-		return nullptr;
-
-	auto it = core_data->render_managers.find(render_interface);
-	if (it != core_data->render_managers.end())
-		return it->second.get();
-	return nullptr;
-}
-
-bool ReleaseRenderManager(RenderInterface* render_interface)
-{
-	if (!render_interface || !core_data)
-		return false;
-
-	auto it = core_data->render_managers.find(render_interface);
-	if (it == core_data->render_managers.end())
-		return false;
-
-	core_data->render_managers.erase(it);
-	return true;
-}
-
 // Functions that need to be accessible within the Core library, but not publicly.
 namespace CoreInternal {
 

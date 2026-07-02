@@ -12,7 +12,6 @@ class Context;
 class FileInterface;
 class FontEngineInterface;
 class RenderInterface;
-class RenderManager;
 class SystemInterface;
 class TextInputHandler;
 enum class DefaultActionPhase;
@@ -170,11 +169,5 @@ RMLUICORE_API void ReleaseFontResources();
 /// @note Any resources referring to the render manager in user space must be cleared first, including callback textures and compiled geometry.
 /// @note Also releases font resources, which invalidates all existing FontFaceHandles returned from the font engine.
 RMLUICORE_API void ReleaseRenderManagers();
-/// Returns the render manager associated with the given render interface, or nullptr if not found.
-RMLUICORE_API RenderManager* GetRenderManager(RenderInterface* render_interface);
-/// Removes only the render manager associated with the given render interface, without releasing global font resources.
-/// @param[in] render_interface The render interface whose render manager should be removed.
-/// @return True if a render manager was found and removed.
-RMLUICORE_API bool ReleaseRenderManager(RenderInterface* render_interface);
 
 } // namespace Rml
