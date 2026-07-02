@@ -2124,8 +2124,13 @@ void Element::SetParent(Element* _parent)
 		meta->style.DirtyInheritedProperties();
 	}
 
-	// The transform state may require recalculation.
-	if (transform_state || (parent && parent->transform_state))
+	// The transform state may require recalculation. Multicontext fork fix: consult the
+	// closest STACKING CONTAINER, not just the direct parent — transform state only lives
+	// on stacking-context containers, so an element inserted more than one level below one
+	// (e.g. dynamic content under a transformed panel) was never dirtied and rendered
+	// without its ancestors' transform until something else happened to dirty it.
+	Element* transform_container = parent ? parent->ClosestStackingContextContainer() : nullptr;
+	if (transform_state || (transform_container && transform_container->transform_state))
 		DirtyTransformState(true, true);
 
 	SetOwnerDocument(parent ? parent->GetOwnerDocument() : nullptr);
