@@ -88,6 +88,9 @@ public:
 
 	Texture GetTexture(RenderManager& render_manager) const;
 
+	/// Release and remove the cached texture entry for a specific render manager.
+	void ReleaseForRenderManager(RenderManager* render_manager);
+
 private:
 	CallbackTextureFunction callback;
 	mutable SmallUnorderedMap<RenderManager*, CallbackTexture> textures;
