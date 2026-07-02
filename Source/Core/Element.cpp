@@ -2944,10 +2944,18 @@ void Element::UpdateTransformState()
 	}
 
 	// A change in perspective or transform will require an update to children transforms as well.
+	// Multicontext fork fix: ALSO propagate via DOM children — the stacking context excludes
+	// invisible elements (AddToStackingContext gates on IsVisible()), so a subtree hidden at
+	// propagation time (e.g. a display:none tab page) never learned about the ancestor
+	// transform and painted untransformed when later revealed. The dirty flag cascades
+	// lazily: a child recomputes on its next render and re-propagates when its own state
+	// changed. The stacking loop is kept for deep same-frame refresh of visible content.
 	if (perspective_or_transform_changed)
 	{
 		for (Element* stacking_child : stacking_context)
 			stacking_child->DirtyTransformState(false, true);
+		for (size_t i = 0; i < children.size(); i++)
+			children[i]->DirtyTransformState(false, true);
 	}
 
 	// No reason to keep the transform state around if transform and perspective have been removed.
