@@ -479,15 +479,6 @@ void ElementDocument::UpdateLayout()
 		if (GetParentNode() != nullptr)
 			containing_block = GetParentNode()->GetBox().GetSize();
 
-		// Multicontext fork: a `layout-boundary` host is sized FROM this document (it is a
-		// replaced element whose intrinsic dimensions are this document's formatted size),
-		// so its box cannot also serve as our containing block — percentages would resolve
-		// against 0 and stay stuck there (circular). Resolve them against the viewport
-		// instead, matching the intent of %-maxima on floating panels ("never exceed the
-		// screen").
-		if (GetParentNode() != nullptr && GetParentNode()->HasAttribute("layout-boundary") && GetContext() != nullptr)
-			containing_block = Vector2f(GetContext()->GetDimensions());
-
 		LayoutEngine::FormatElement(this, containing_block);
 
 		// Ignore dirtied layout during document formatting. Layouting must not require re-iteration.
