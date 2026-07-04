@@ -2183,8 +2183,13 @@ void Element::SetParent(Element* _parent)
 		meta->style.DirtyInheritedProperties();
 	}
 
-	// The transform state may require recalculation.
-	if (transform_state || (parent && parent->transform_state))
+	// The transform state may require recalculation. Multicontext fork fix: consult the
+	// closest STACKING CONTAINER, not just the direct parent — transform state only lives
+	// on stacking-context containers, so an element inserted more than one level below one
+	// (e.g. dynamic content under a transformed panel) was never dirtied and rendered
+	// without its ancestors' transform until something else happened to dirty it.
+	Element* transform_container = parent ? parent->ClosestStackingContextContainer() : nullptr;
+	if (transform_state || (transform_container && transform_container->transform_state))
 		DirtyTransformState(true, true);
 
 	SetOwnerDocument(parent ? parent->GetOwnerDocument() : nullptr);
@@ -3023,10 +3028,18 @@ void Element::UpdateTransformState()
 	}
 
 	// A change in perspective or transform will require an update to children transforms as well.
+	// Multicontext fork fix: ALSO propagate via DOM children — the stacking context excludes
+	// invisible elements (AddToStackingContext gates on IsVisible()), so a subtree hidden at
+	// propagation time (e.g. a display:none tab page) never learned about the ancestor
+	// transform and painted untransformed when later revealed. The dirty flag cascades
+	// lazily: a child recomputes on its next render and re-propagates when its own state
+	// changed. The stacking loop is kept for deep same-frame refresh of visible content.
 	if (perspective_or_transform_changed)
 	{
 		for (Element* stacking_child : stacking_context)
 			stacking_child->DirtyTransformState(false, true);
+		for (size_t i = 0; i < children.size(); i++)
+			children[i]->DirtyTransformState(false, true);
 	}
 
 	// No reason to keep the transform state around if transform and perspective have been removed.
